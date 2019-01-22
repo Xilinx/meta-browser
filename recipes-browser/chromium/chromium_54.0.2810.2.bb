@@ -57,6 +57,7 @@ SRC_URI += "\
         file://0001-openh264-disable-format-security-warning.patch.patch \
         file://0002-replace-struct-ucontext-with-ucontext_t.patch \
         file://wrapper-extra-flags.patch \
+        file://do-not-specify-march-on-arm.patch \
 "
 SRC_URI_append_libc-musl = "\
         file://musl-support/0001-sandbox-Define-TEMP_FAILURE_RETRY-if-not-defined.patch \
@@ -158,12 +159,6 @@ EXTRA_OEGYP += "\
 # ARM builds need special additional flags (see ${S}/build/config/arm.gni).
 # If we do not pass |arm_arch| and friends to GN, it will deduce a value that
 # will then conflict with TUNE_CCARGS and CC.
-def get_arm_version(arm_arch):
-    import re
-    try:
-        return re.match(r'armv(\d).*', arm_arch).group(1)
-    except IndexError:
-        bb.fatal('Unrecognized ARM architecture value: %s' % arm_arch)
 def get_compiler_flag(params, param_name, d):
     """Given a sequence of compiler arguments in |params|, returns the value of
     an option |param_name| or an empty string if the option is not present."""
@@ -171,13 +166,15 @@ def get_compiler_flag(params, param_name, d):
       if param.startswith(param_name):
         return param.split('=')[1]
     return ''
-ARM_ARCH = "${@get_compiler_flag(d.getVar('TUNE_CCARGS').split(), '-march', d)}"
 ARM_FLOAT_ABI = "${@bb.utils.contains('TUNE_FEATURES', 'callconvention-hard', 'hard', 'softfp', d)}"
 ARM_FPU = "${@get_compiler_flag(d.getVar('TUNE_CCARGS').split(), '-mfpu', d)}"
 ARM_TUNE = "${@get_compiler_flag(d.getVar('TUNE_CCARGS').split(), '-mcpu', d)}"
-ARM_VERSION = "${@get_arm_version(d.getVar('ARM_ARCH'))}"
+ARM_VERSION_aarch64 = "8"
+ARM_VERSION_armv7a = "7"
+ARM_VERSION_armv7ve = "7"
+ARM_VERSION_armv6 = "6"
+
 GYP_DEFINES_append_arm = " \
-        -Darm_arch=${ARM_ARCH} \
         -Darm_float_abi=${ARM_FLOAT_ABI} \
         -Darm_fpu=${ARM_FPU} \
         -Darm_tune=${ARM_TUNE} \
