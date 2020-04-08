@@ -5,55 +5,25 @@ via compiler cmdline to chromium build
 I think upstream should check for the values on compiler cmdline
 before overriding these
 
-Rebased from metabrowser master to commit f63facb
-
-refer to commit:156a2d98
-
-In master there's been a change that led to use mcpu instead of march and
-mtune. This caused an error because there's a regex looking for march in
-TUNE_FEATURES.
-This patch (from master) was backported to apply on top of commit f63facb 
-to bypass this error
-
 Upstream-Status: Inappropriate [OE-Specific]
 
 Signed-off-by: Khem Raj <raj.khem@gmail.com>
-Signed-off-by: Jaewon Lee <jaewon.lee@xilinx.com>
-
-Index: chromium-54.0.2810.2/build/config/compiler/BUILD.gn
-===================================================================
---- chromium-54.0.2810.2.orig/build/config/compiler/BUILD.gn
-+++ chromium-54.0.2810.2/build/config/compiler/BUILD.gn
-@@ -515,32 +515,6 @@ config("compiler_cpu_abi") {
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -758,16 +758,6 @@ config("compiler_cpu_abi") {
            "-mmmx",
          ]
        }
 -    } else if (current_cpu == "arm") {
--      if (is_clang && !is_android && !is_nacl) {
--        cflags += [ "--target=arm-linux-gnueabihf" ]
--        ldflags += [ "--target=arm-linux-gnueabihf" ]
--      }
 -      if (!is_nacl) {
 -        cflags += [
 -          "-march=$arm_arch",
 -          "-mfloat-abi=$arm_float_abi",
 -        ]
--        if (arm_use_thumb) {
--          cflags += [ "-mthumb" ]
--          if (is_android && !is_clang) {
--            # Clang doesn't support this option.
--            cflags += [ "-mthumb-interwork" ]
--          }
--        }
 -      }
 -      if (arm_tune != "") {
 -        cflags += [ "-mtune=$arm_tune" ]
 -      }
--    } else if (current_cpu == "arm64") {
--      if (is_clang && !is_android && !is_nacl) {
--        cflags += [ "--target=aarch64-linux-gnu" ]
--        ldflags += [ "--target=aarch64-linux-gnu" ]
--      }
-     } else if (current_cpu == "mipsel") {
-       if (is_clang) {
-         # Temporarily needed due to unsupported MIPS macro instructions
+     } else if (current_cpu == "mipsel" && !is_nacl) {
+       ldflags += [ "-Wl,--hash-style=sysv" ]
+       if (custom_toolchain == "") {
